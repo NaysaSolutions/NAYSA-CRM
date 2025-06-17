@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import AddClientForm from "./AddClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus, faEye } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
 import { PostAPI  } from "../api";
 
-const ClientsFinancials = () => {
+const Vouchers = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -20,24 +20,19 @@ const ClientsFinancials = () => {
 
   // Sorting state
   const [sortConfig, setSortConfig] = useState({
-    key: "client_name", // Default sort by client name
+    key: "issued_branch", // Default sort by client name
     direction: "asc"   // Default ascending order
   });
 
   const [searchFields, setSearchFields] = useState({
-    client_code: "",
-    client_name: "",
-    contract_date: "",
-    sma_date: "",
-    cas: "",
-    live: "",
-    with_sma: "",
-    fs_live: "",
+    voucher_code: "",
+    issued_branch: "",
+    redeemed_branch: "",
+    redeemed_date: "",
     active: "",
-    numberOfUsers: "",
-    training_days: "",
-    sma_days: "",
-    post_training_days: "",
+    redeemed: "",
+    cancelled: "",
+    amount: "",
   });
 
 
@@ -147,7 +142,7 @@ const currentItems = Array.isArray(filteredClients)
 
   return (
 
-  <div className="p-2 bg-white mt-8">
+  <div className="p-2 bg-white mt-12">
   {/* Header */}
   <div className="absolute top-3 right-6 flex items-center gap-4">
     <FontAwesomeIcon icon={faBell} className="w-5 h-5 text-gray-600 hover:text-blue-700 cursor-pointer transition-colors" />
@@ -175,13 +170,13 @@ const currentItems = Array.isArray(filteredClients)
 
   {/* Title and Button */}
   <div className="flex justify-between items-center mt-2 mb-2">
-    <h2 className="text-2xl font-bold text-gray-800">Clients Information (Financials)</h2>
+    <h2 className="text-2xl font-bold text-gray-800">Vouchers Information </h2>
     <button
       className="bg-blue-700 text-white px-4 py-2 rounded-full hover:bg-blue-900 transition"
       // onClick={() => setShowAddClientForm(true)}
       onClick={() => navigate("/Addclients")}
     >
-              <FontAwesomeIcon icon={faPlus} /> Add New Client
+              <FontAwesomeIcon icon={faPlus} /> Add Record
     </button>
   </div>
 
@@ -206,19 +201,14 @@ const currentItems = Array.isArray(filteredClients)
           <thead className="bg-gray-200 sticky top-0 z-10">
             <tr className="bg-blue-700 text-white text-center">
               {[
-                { key: "client_code", label: "Client Code" },
-                { key: "client_name", label: "Client Name" },
-                { key: "contract_date", label: "Contract Date" },
-                { key: "sma_date", label: "SMA Date" },
-                { key: "cas", label: "CAS" },
-                { key: "live", label: "Live" },
-                { key: "with_sma", label: "With SMA?" },
-                { key: "fs_live", label: "FS Live?" },
+                { key: "voucher_code", label: "Voucher Code" },
+                { key: "issued_branch", label: "Issuing Branch" },
+                { key: "redeemed_branch", label: "Redeemed Branch" },
+                { key: "redeemed_date", label: "Redeemed Date" },
                 { key: "active", label: "Active" },
-                { key: "numberOfUsers", label: "User License" },
-                { key: "training_days", label: "Training Days" },
-                { key: "sma_days", label: "SMA Days" },
-                { key: "post_training_days", label: "Post Training Days" },
+                { key: "redeemed", label: "Redeemed" },
+                { key: "cancelled", label: "Cancelled" },
+                { key: "quantity", label: "Amount" },
                 { key: "action", label: "Action" },
               ].map(({ key, label }) => (
                 <th
@@ -257,37 +247,26 @@ const currentItems = Array.isArray(filteredClients)
                   onClick={() => navigate("/Addclients", { state: client })}
                   title="Click to View Document"
               >
-                <td className="px-2 py-2 border text-left text-blue-800">{client.client_code}</td>
-                <td className="px-2 py-2 w-[300px] border text-left">{client.client_name}</td>
+                <td className="px-2 py-2 border text-left text-blue-800">{client.voucher_code}</td>
+                <td className="px-2 py-2 w-[300px] border text-left">{client.issued_branch}</td>
+                <td className="px-2 py-2 w-[300px] border text-left">{client.redeemed_branch}</td>
                 <td className="px-2 py-2 border">
                   {new Intl.DateTimeFormat('en-US', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
-                  }).format(new Date(client.contract_date))}
+                  }).format(new Date(client.redeemed_date))}
                 </td>
-                <td className="px-2 py-2 border">
-                  {new Intl.DateTimeFormat('en-US', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                  }).format(new Date(client.sma_date))}
-                </td>
-                <td className="px-2 py-2 border">{client.cas}</td>
-                <td className="px-2 py-2 border">{client.live}</td>
-                <td className="px-2 py-2 border">{client.with_sma}</td>
-                <td className="px-2 py-2 border">{client.fs_live}</td>
                 <td className="px-2 py-2 border">{client.active}</td>
-                <td className="px-2 py-2 border">{client.numberOfUsers}</td>
-                <td className="px-2 py-2 border">{client.training_days}</td>
-                <td className="px-2 py-2 border">{client.sma_days}</td>
-                <td className="px-2 py-2 border">{client.post_training_days}</td>
+                <td className="px-2 py-2 border">{client.redeemed}</td>
+                <td className="px-2 py-2 border">{client.cancelled}</td>
+                <td className="px-2 py-2 border">{client.amount}</td>
                 <td className="px-2 py-2 border">
                   <button
                     className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-800 transition"
                     onClick={() => navigate("/Addclients", { state: client })}
                   >
-                  <FontAwesomeIcon icon={faFolderOpen} />
+                  <FontAwesomeIcon icon={faEye} />
                   </button>
                 </td>
               </tr>
@@ -338,4 +317,4 @@ const currentItems = Array.isArray(filteredClients)
   );
 };
 
-export default ClientsFinancials;
+export default Vouchers;

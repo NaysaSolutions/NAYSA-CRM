@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Sidebar from './Components/Sidebar';
+import Navbar from './Components/Navbar';
 import AddClientForm from './Components/AddClient';
 
 const Layout = ({ children }) => {
@@ -9,6 +10,7 @@ const Layout = ({ children }) => {
 
   return (
     <div className="flex h-screen">
+
       {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -23,6 +25,9 @@ const Layout = ({ children }) => {
         }}
         currentSection={currentSection}
       />
+
+
+      <Navbar isSidebarOpen={isSidebarOpen} />
 
       {/* Main Content */}
       <div

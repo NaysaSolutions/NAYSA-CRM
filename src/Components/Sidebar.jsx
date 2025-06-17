@@ -96,7 +96,7 @@ const Sidebar = ({
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
               />
-              <SidebarLink
+              {/* <SidebarLink
                 to="/clients"
                 icon={faUsers}
                 label="Clients (All)"
@@ -106,19 +106,19 @@ const Sidebar = ({
                   closeAddClientForm();
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
-              />
+              /> */}
                 <SidebarLink
-                to="/clientsfinancials"
+                to="/Vouchers"
                 icon={faListUl}
-                label="Clients (Financials)"
-                isActive={location.pathname === "/clientsfinancials" && currentSection !== "add-client"}
+                label="Vouchers List"
+                isActive={location.pathname === "/Vouchers" && currentSection !== "add-client"}
                 isOpen={isOpen}
                 onClick={() => {
                   closeAddClientForm();
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
               />
-               <SidebarLink
+               {/* <SidebarLink
                 to="/clientspayroll"
                 icon={faListUl}
                 label="Clients (HR-Pay)"
@@ -128,14 +128,14 @@ const Sidebar = ({
                   closeAddClientForm();
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
-              />
+              /> */}
 
 
 
               <SidebarLink
                 to="/Addclients"
                 icon={faAdd}
-                label="Add New Client"
+                label="Add New Record"
                 isActive={location.pathname === "/Addclients" && currentSection !== "add-client"}
                 isOpen={isOpen}
                 onClick={() => {

@@ -1,442 +1,191 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faUser, faSignOutAlt, faChartBar, faChartPie, faChartLine } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../Authentication/AuthContext";
 import { useNavigate } from "react-router-dom";
-import ClientLookupModal from "./ClientLookupModal"; // Import the new modal component
-import { PostAPI  } from "../api";
+import ClientLookupModal from "./ClientLookupModal";
+import { PostAPI } from "../api";
 import StatCard from "./StatCard";
-import MiniTable from "./MiniTable";
+import TableIssuingBranch from "./TableIssuingBranch";
+import TableRedeemingBranch from "./TableRedeemingBranch";
 import DashboardClientList from "./DashboardClientList";
 
 import {
-
-  PieChart,Pie,
-  BarChart,Bar,
-  LineChart,Line,
+  PieChart, Pie,
+  BarChart, Bar,
+  LineChart, Line,
   AreaChart, Area,
   ComposedChart,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ScatterChart,Scatter,
-
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Cell,
+  ScatterChart, Scatter,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 
-// const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#00C49F", "#FF69B4", "#8B0000"];
+// Constants
+const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
+const CHART_HEIGHT = 320;
+const CHART_TYPES = {
+  BAR: 'bar',
+  PIE: 'pie',
+  LINE: 'line',
+  AREA: 'area'
+};
 
-const COLORS = ["#8884d8", "#64b5f6", "#ffc658", "#ff8042", "#00C49F", "#FF69B4", "#8B0000"];
-// const COLORS = ['#1976d2', '#1e88e5', '#2196f3', '#42a5f5', '#64b5f6', '#90caf9', '#bbdefb'];
+// Loading Component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
 
+// Error Component
+const ErrorMessage = ({ message }) => (
+  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+    <p>Error: {message}</p>
+  </div>
+);
+
+// Custom Hook for Dashboard Data
+const useDashboardData = (userId) => {
+  const [data, setData] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchDataByMode = useCallback(async (mode) => {
+    try {
+      const res = await PostAPI(`getClientsdashboard?user=${userId}&mode=${mode}`);
+      return res.data;
+    } catch (e) {
+      console.error(`Error fetching ${mode}:`, e);
+      throw e;
+    }
+  }, [userId]);
+
+  const loadAllData = useCallback(async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const modes = [
+        "ContractsSummary", "VoucherStat", "ActiveClients", "TopIssuingBranch",
+        "TopRedeemingBranch", "TopActiveClients", "TopIssuingBranchList",
+        "TopRedeemingBranchList", "SMADashboard", "Industry", "SMAApplication"
+      ];
+
+      const results = await Promise.all(modes.map(fetchDataByMode));
+      
+      const dashboardData = modes.reduce((acc, mode, index) => {
+        acc[mode] = results[index]?.dashboard1 || [];
+        return acc;
+      }, {});
+
+      setData(dashboardData);
+    } catch (err) {
+      setError('Failed to load dashboard data');
+      console.error('Dashboard data loading error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, fetchDataByMode]);
+
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
+
+  return { data, loading, error, refetch: loadAllData };
+};
+
+// Enhanced Chart Components
+const ChartContainer = ({ title, children, className = "w-full" }) => (
+  <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300 ${className}`}>
+    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <FontAwesomeIcon icon={faChartBar} className="text-blue-600" />
+      {title}
+    </h4>
+    <div style={{ height: CHART_HEIGHT }}>
+      {children}
+    </div>
+  </div>
+);
+
+const CustomTooltip = ({ active, payload, label, formatter }) => {
+  if (!active || !payload || !payload.length) return null;
+  
+  return (
+    <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+      <p className="font-medium text-gray-800">{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} className="text-sm" style={{ color: entry.color }}>
+          {formatter ? formatter(entry.value, entry.name) : `${entry.name}: ${entry.value}`}
+        </p>
+      ))}
+    </div>
+  );
+};
 
 const CustomXAxisTick = ({ x, y, payload, data, dataKey }) => {
-  const item = data.find(d => d[dataKey] === payload.value);
+  const item = data?.find(d => d[dataKey] === payload.value);
   const count = item ? item.client_count : '';
 
   return (
     <g transform={`translate(${x},${y + 10})`}>
-      <text
-        x={0}
-        y={0}
-        dy={0}
-        textAnchor="middle"
-        fill="#666"
-        fontSize={14}
-      >
+      <text x={0} y={0} dy={0} textAnchor="middle" fill="#666" fontSize={12}>
         {payload.value}
       </text>
-      <text
-        x={0}
-        y={15}
-        dy={0}
-        textAnchor="middle"
-        fill="#333"
-        fontSize={12}
-        fontWeight="bold"
-      >
+      <text x={0} y={15} dy={0} textAnchor="middle" fill="#333" fontSize={11} fontWeight="bold">
         {count}
       </text>
     </g>
   );
 };
 
-const SystemsBarChart = ({ data }) => {
+// Unified Chart Components
+const UnifiedBarChart = ({ data, title, dataKey = "client_count", nameKey = "system_code" }) => {
   const safeData = Array.isArray(data) ? data : [];
-
+  
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications</h4>
+    <ChartContainer title={title}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={safeData} margin={{ bottom: 40 }}>
-          {/* <CartesianGrid strokeDasharray="3 3" /> */}
+        <BarChart data={safeData} margin={{ bottom: 50, top: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis
-            dataKey="system_code"
-            interval={0}
-            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
+            dataKey={nameKey}
+            tick={<CustomXAxisTick data={safeData} dataKey={nameKey} />}
             height={60}
+            interval={0}
           />
-          {/* <YAxis allowDecimals={false} /> */}
-          <Tooltip formatter={(value) => [value, "Clients"]} />
-          <Bar dataKey="client_count" name="">
+          <YAxis hide />
+          <Tooltip content={<CustomTooltip formatter={(value) => [value, " Clients"]} />} />
+          <Bar dataKey={dataKey} radius={[4, 4, 0, 0]}>
             {safeData.map((_, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartContainer>
   );
 };
 
-
-const SMAApplicationBarChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Applications with SMA</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={safeData} margin={{ bottom: 40 }}>
-          {/* <CartesianGrid strokeDasharray="3 3" /> */}
-          <XAxis
-            dataKey="system_code"
-            interval={0}
-            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
-            height={60}
-          />
-          {/* <YAxis allowDecimals={false} /> */}
-          <Tooltip formatter={(value) => [value, "Clients"]} />
-          <Bar dataKey="client_count" name="">
-            {safeData.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-
-// const SMABarChart = ({ data }) => {
-//   const safeData = Array.isArray(data) ? data : [];
-
-//   return (
-//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-//       <h4 className="text-md font-bold mb-4">SMA Count (Bar Chart)</h4>
-//       <ResponsiveContainer width="100%" height="100%">
-//         <BarChart data={safeData} margin={{ bottom: 40 }}>
-//           {/* <CartesianGrid strokeDasharray="3 3" /> */}
-//           <XAxis
-//             dataKey="sma_type"
-//             interval={0}
-//             tick={<CustomXAxisTick data={safeData} dataKey="sma_type" />}
-//             height={60}
-//           />
-//           {/* <YAxis allowDecimals={false} /> */}
-//           <Tooltip formatter={(value) => [value, "count"]} />
-//           <Bar dataKey="client_count" name="">
-//             {safeData.map((_, index) => (
-//               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-//             ))}
-//           </Bar>
-//         </BarChart>
-//       </ResponsiveContainer>
-//     </div>
-//   );
-// };
-
-
-const SystemsPieChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, client_count: +d.client_count }))
-    : [];
+const UnifiedPieChart = ({ data, title, dataKey = "client_count", nameKey = "system_code" }) => {
+  const safeData = useMemo(() => 
+    Array.isArray(data) ? data.map(d => ({ ...d, [dataKey]: +d[dataKey] })) : []
+  , [data, dataKey]);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications (Pie Chart)</h4>
+    <ChartContainer title={title}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Tooltip formatter={(value) => [value, "Clients"]} />
+          <Tooltip content={<CustomTooltip formatter={(value) => [value, " Clients"]} />} />
           <Pie
             data={safeData}
-            dataKey="client_count"
-            nameKey="system_code"
-            outerRadius={80}
-            label={({ name, percent }) =>
-              `${name}: ${(percent * 100).toFixed(0)}%`
-            }
-          >
-            {safeData.map((_, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-
-// const SMAPieChart = ({ data }) => {
-//   const safeData = Array.isArray(data)
-//     ? data.map(d => ({ ...d, client_count: +d.client_count }))
-//     : [];
-
-//   return (
-//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
-//       <h4 className="text-md font-bold mb-4">SMA Count (Pie Chart)</h4>
-//       <ResponsiveContainer width="100%" height="80%">
-//         <PieChart>
-//           <Tooltip formatter={(value) => [value, "Clients"]} />
-//           <Pie
-//             data={safeData}
-//             dataKey="client_count"
-//             nameKey="sma_type"
-//             outerRadius={80}
-//             label={({ name, value, percent }) =>
-//               `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
-//             }
-//           >
-//             {safeData.map((_, index) => (
-//               <Cell
-//                 key={`cell-${index}`}
-//                 fill={COLORS[index % COLORS.length]}
-//               />
-//             ))}
-//           </Pie>
-//         </PieChart>
-//       </ResponsiveContainer>
-//     </div>
-//   );
-// };
-
-
-const SystemsLineChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications (Line Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={safeData} margin={{ bottom: 30 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="system_code"
-            interval={0}
-            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
-            height={60}
-            width={100}
-          />
-          {/* <YAxis allowDecimals={false} /> */}
-          <Tooltip formatter={(value) => [value, "count"]} />
-          <Line
-            type="monotone"
-            dataKey="client_count"
-            stroke="#8884d8"
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-// const SMALineChart = ({ data }) => {
-//   const safeData = Array.isArray(data)
-//     ? data.map(d => ({ ...d, client_count: +d.client_count }))
-//     : [];
-
-//   return (
-//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
-//       <h4 className="text-md font-bold mb-4">SMA Count (Line Chart)</h4>
-//       <ResponsiveContainer width="100%" height={300}>
-//         <LineChart data={safeData}>
-//           <CartesianGrid strokeDasharray="3 3" />
-//           <XAxis dataKey="sma_type" />
-//           <YAxis />
-//           <Tooltip formatter={(value) => [value, "Clients"]} />
-//           <Line
-//             type="monotone"
-//             dataKey="client_count"
-//             stroke={COLORS[0]}
-//             activeDot={{ r: 8 }}
-//           />
-//         </LineChart>
-//       </ResponsiveContainer>
-//     </div>
-//   );
-// };
-
-
-
-const SystemsAreaChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-md h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications (Area Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={safeData} margin={{ bottom: 40 }}>
-          {/* <CartesianGrid strokeDasharray="3 3" /> */}
-          {/* <CartesianGrid stroke="#ccc" /> */}
-          <XAxis
-            dataKey="system_code"
-            interval={0}
-            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
-            height={60}
-          />
-          {/* <YAxis allowDecimals={false} /> */}
-          <Tooltip formatter={(value) => [value, "count"]} />
-          <Area
-            type="monotone"
-            dataKey="client_count"
-            stroke={COLORS[0]}
-            fill={COLORS[0]}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-
-// const SMAAreaChart = ({ data }) => {
-//   const safeData = Array.isArray(data)
-//     ? data.map(d => ({ ...d, client_count: +d.client_count }))
-//     : [];
-
-//   return (
-//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
-//       <h4 className="text-md font-bold mb-4">SMA Count (Area Chart)</h4>
-//       <ResponsiveContainer width="100%" height={300}>
-//         <AreaChart data={safeData}>
-//           <CartesianGrid stroke="#ccc" />
-//           <XAxis dataKey="sma_type" />
-//           <YAxis />
-//           <Tooltip formatter={(value) => [value, "Clients"]} />
-//           <Area
-//             type="monotone"
-//             dataKey="client_count"
-//             stroke={COLORS[0]}
-//             fill={COLORS[0]}
-//           />
-//         </AreaChart>
-//       </ResponsiveContainer>
-//     </div>
-//   );
-// };
-
-
-const SystemsComposedChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications (Composed Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={safeData} margin={{ bottom: 40 }}>
-          {/* <CartesianGrid strokeDasharray="3 3" /> */}
-          <XAxis
-            dataKey="system_code"
-            interval={0}
-            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
-            height={60}
-          />
-          {/* <YAxis allowDecimals={false} /> */}
-          <Tooltip formatter={(value) => [value, "count"]} />
-          <Bar dataKey="client_count">
-            {safeData.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Bar>
-          <Line type="monotone" dataKey="client_count" stroke="#ff7300" />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SystemsRadarChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications (Radar Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={safeData}>
-          <PolarGrid />
-          <PolarAngleAxis dataKey="system_code" />
-          <PolarRadiusAxis />
-          <Radar
-            dataKey="client_count"
-            stroke="#8884d8"
-            fill="#8884d8"
-            fillOpacity={0.6}
-          />
-        </RadarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SystemsScatterChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map((d, i) => ({ ...d, index: i })) // Add index for X-axis
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications (Scatter Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart margin={{ bottom: 40 }}>
-          <CartesianGrid />
-          <XAxis dataKey="index" name="Application Index" />
-          <YAxis dataKey="client_count" name="Client Count" />
-          <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={(value) => [value, "count"]} />
-          <Scatter name="Applications" data={safeData} fill="#8884d8" />
-        </ScatterChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-
-// const COLORS = ['#8884d8', '#82ca9d', '#ffc658'];
-
-  // const renderCustomizedLabel = ({ name, value, percent, x, y }) => {
-  //   return (
-  //     <text x={x} y={y} fill="#000" fontSize="1rem" textAnchor="middle" dominantBaseline="central">
-  //       {`${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-  //     </text>
-  //   );
-  // };
-
-const IndustryPieChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, count: +d.count }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Client Industry</h4>
-      <ResponsiveContainer width="100%" height="80%">
-        <PieChart>
-          <Tooltip formatter={(value) => [value, 'Clients']} />
-          <Pie
-            data={safeData}
-            dataKey="count"
-            nameKey="industry"
+            dataKey={dataKey}
+            nameKey={nameKey}
             outerRadius={100}
-            label={({ name, value, percent }) => `${name}: (${(percent * 100).toFixed(0)}%)` }
-            // label={renderCustomizedLabel}
+            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+            labelLine={false}
           >
             {safeData.map((_, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -444,557 +193,205 @@ const IndustryPieChart = ({ data }) => {
           </Pie>
         </PieChart>
       </ResponsiveContainer>
-    </div>
+    </ChartContainer>
   );
 };
 
-const IndustryBarChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, count: +d.count }))
-    : [];
+// Chart Type Selector Component
+const ChartTypeSelector = ({ currentType, onTypeChange, types = Object.values(CHART_TYPES) }) => (
+  <div className="flex gap-2 mb-4">
+    {types.map(type => (
+      <button
+        key={type}
+        onClick={() => onTypeChange(type)}
+        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+          currentType === type
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+      >
+        <FontAwesomeIcon 
+          icon={type === 'pie' ? faChartPie : type === 'line' ? faChartLine : faChartBar} 
+          className="mr-1" 
+        />
+        {type.charAt(0).toUpperCase() + type.slice(1)}
+      </button>
+    ))}
+  </div>
+);
 
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Industry Count (Bar Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={safeData} margin={{ bottom: 40 }}>
-          <XAxis dataKey="industry" interval={0} height={60} />
-          <Tooltip formatter={(value) => [value, 'Count']} />
-          <Bar dataKey="count" name="">
-            {safeData.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const IndustryLineChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, count: +d.count }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Industry Count (Line Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={safeData}>
-          <XAxis dataKey="industry" />
-          <YAxis />
-          <Tooltip formatter={(value) => [value, 'Count']} />
-          <Line type="monotone" dataKey="count" stroke="#8884d8" />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const IndustryAreaChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, count: +d.count }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Industry Count (Area Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={safeData}>
-          <XAxis dataKey="industry" />
-          <YAxis />
-          <Tooltip formatter={(value) => [value, 'Count']} />
-          <Area type="monotone" dataKey="count" stroke="#82ca9d" fill="#82ca9d" />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const IndustryComposedChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, count: +d.count }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Industry Count (Composed Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={safeData}>
-          <XAxis dataKey="industry" />
-          <YAxis />
-          <Tooltip formatter={(value) => [value, 'Count']} />
-          <Bar dataKey="count" barSize={20} fill="#8884d8" />
-          <Line type="monotone" dataKey="count" stroke="#ff7300" />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const IndustryRadarChart = ({ data }) => {
-  const radarData = Array.isArray(data)
-    ? data.map(d => ({ subject: d.industry, A: +d.count, fullMark: 10 }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Industry Count (Radar Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={radarData}>
-          <PolarGrid />
-          <PolarAngleAxis dataKey="subject" />
-          <Radar dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-          <Tooltip />
-        </RadarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const IndustryScatterChart = ({ data }) => {
-  const scatterData = Array.isArray(data)
-    ? data.map((d, i) => ({ x: i, y: +d.count, industry: d.industry }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Industry Count (Scatter Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart>
-          <XAxis dataKey="x" name="Industry" tickFormatter={(i) => data[i]?.industry} />
-          <YAxis dataKey="y" name="Count" />
-          <Tooltip formatter={(value) => [value, 'Count']} />
-          <Scatter data={scatterData} fill="#8884d8" />
-        </ScatterChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-
-
-const SMAPieChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, client_count: +d.client_count }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
-      <h4 className="text-md font-bold mb-2">SMA Count</h4>
-      <ResponsiveContainer width="100%" height="80%">
-        <PieChart>
-          <Tooltip formatter={(value) => [value, "Clients"]} />
-          <Pie
-            data={safeData}
-            dataKey="client_count"
-            nameKey="sma_type"
-            outerRadius={100}
-            label={({ name, value, percent }) =>
-              `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
-            }
-          >
-            {safeData.map((_, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SMABarChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-  const total = safeData.reduce((sum, d) => sum + d.client_count, 0);
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count (Bar Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={safeData} margin={{ bottom: 40 }}>
-          <XAxis dataKey="sma_type" interval={0} height={60} />
-          <Tooltip formatter={(value) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, 'Clients']} />
-          <Bar
-            dataKey="client_count"
-            label={({ value }) => `${value}`}
-          >
-            {safeData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SMALineChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count (Line Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={safeData}>
-          <XAxis dataKey="sma_type" />
-          <YAxis />
-          <Tooltip formatter={(value) => [value, 'Clients']} />
-          <Line type="monotone" dataKey="client_count" stroke="#8884d8" />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SMAAreaChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count (Area Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={safeData}>
-          <XAxis dataKey="sma_type" />
-          <YAxis />
-          <Tooltip formatter={(value) => [value, 'Clients']} />
-          <Area type="monotone" dataKey="client_count" stroke="#82ca9d" fill="#82ca9d" />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SMAComposedChart = ({ data }) => {
-  const safeData = Array.isArray(data) ? data : [];
-  const total = safeData.reduce((sum, d) => sum + d.client_count, 0);
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count (Composed Chart)</h4>
-      <ResponsiveContainer width="100%" height="90%">
-        <ComposedChart data={safeData}>
-          <XAxis dataKey="sma_type" />
-          {/* <YAxis /> */}
-          <Tooltip formatter={(value) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, 'Clients']} />
-          <Bar
-            dataKey="client_count"
-            barSize={100}
-            fill="#8884d8"
-            // label={({ value }) => `${value}`}
-            // label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="client_count" 
-            stroke="#ff7300" 
-            // label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SMARadarChart = ({ data }) => {
-  const radarData = Array.isArray(data)
-    ? data.map(d => ({ subject: d.sma_type, A: +d.client_count, fullMark: 100 }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count (Radar Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={radarData}>
-          <PolarGrid />
-          <PolarAngleAxis dataKey="subject" />
-          <Radar dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-          <Tooltip />
-        </RadarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const SMAScatterChart = ({ data }) => {
-  const scatterData = Array.isArray(data)
-    ? data.map((d, i) => ({ x: i, y: +d.client_count, sma: d.sma_type }))
-    : [];
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count (Scatter Chart)</h4>
-      <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart>
-          <XAxis dataKey="x" name="SMA" tickFormatter={(i) => data[i]?.sma_type} />
-          <YAxis dataKey="y" name="Clients" />
-          <Tooltip formatter={(value) => [value, 'Clients']} />
-          <Scatter data={scatterData} fill="#8884d8" />
-        </ScatterChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-
-
-
+// Main Dashboard Component
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [allClients, setAllClients] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [chartTypes, setChartTypes] = useState({
+    issuing: CHART_TYPES.BAR,
+    redeeming: CHART_TYPES.BAR,
+    services: CHART_TYPES.BAR
+  });
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchDashboardData();
-    }
-  }, [user]);
+  const { data, loading, error, refetch } = useDashboardData(user?.id);
 
-const [dashboard1, setDashboard1] = useState([]);
-const [dashboard2, setDashboard2] = useState([]);
-
-const fetchDashboardData = async () => {
-  try {
-    const response = await PostAPI(`getClientsdashboard?user=${user.id}&mode=Top10`);
-    console.log("Dashboard API response:", response);
-
-    if (response?.data?.success) {
-      const clientsData = response.data.dashboard1 || [];
-      setDashboard1(clientsData);
-      setDashboard2(response.data.dashboard2 || []);
-      setClients(clientsData); // <-- Important fix
-    }
-  } catch (error) {
-    console.error("Error fetching dashboard data:", error);
-  }
-};
-
-
-useEffect(() => {
-  if (user?.id) {
-    fetchDashboardData();
-  }
-}, [user]);
-
-
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout();
     navigate("/");
+  }, [logout, navigate]);
+
+  const handleChartTypeChange = useCallback((chartName, type) => {
+    setChartTypes(prev => ({ ...prev, [chartName]: type }));
+  }, []);
+
+  const renderChart = (type, data, title, dataKey, nameKey) => {
+    switch (type) {
+      case CHART_TYPES.PIE:
+        return <UnifiedPieChart data={data} title={title} dataKey={dataKey} nameKey={nameKey} />;
+      case CHART_TYPES.BAR:
+      default:
+        return <UnifiedBarChart data={data} title={title} dataKey={dataKey} nameKey={nameKey} />;
+    }
   };
 
-
-  const fetchDataByMode = async (mode) => {
-  try {
-    const res = await PostAPI(`getClientsdashboard?user=${user.id}&mode=${mode}`);
-    return res.data;
-  } catch (e) {
-    console.error(`Error fetching ${mode}`, e);
-    return null;
+  if (loading) {
+    return (
+      <div className="flex h-screen">
+        <main className="flex-1 p-6 bg-gray-50">
+          <LoadingSpinner />
+        </main>
+      </div>
+    );
   }
-};
 
-const [contractsSummary, setContractsSummary] = useState([]);
-const [smaSummary, setSmaSummary] = useState([]);
-const [activeClients, setActiveClients] = useState([]);
-const [systemUsage, setSystemUsage] = useState([]);
-const [topClients, setTopClients] = useState([]);
-const [ExpiredSMA, setExpiredSMA] = useState([]);
-const [upcomingExpirations, setUpcomingExpirations] = useState([]);
-const [SMADashboard, setSMADashboard] = useState([]);
-const [Industry, setIndustry] = useState([]);
-const [SMAApplication, setSMAApplication] = useState([]);
-
-useEffect(() => {
-  if (!user?.id) return;
-
-  const loadDashboard = async () => {
-    const [
-      contractsSummary,
-      smaSummary,
-      activeClients,
-      systemUsage,
-      topClients,
-      ExpiredSMA,
-      expirations,
-      SMADashboard,
-      Industry,
-      SMAApplication,
-    ] = await Promise.all([
-      fetchDataByMode("ContractsSummary"),
-      fetchDataByMode("ClientsWithSMA"),
-      fetchDataByMode("ActiveClients"),
-      fetchDataByMode("SystemUsage"),
-      fetchDataByMode("TopActiveClients"),
-      fetchDataByMode("ExpiredSMA"),
-      fetchDataByMode("UpcomingExpirations"),
-      fetchDataByMode("SMADashboard"),
-      fetchDataByMode("Industry"),
-      fetchDataByMode("SMAApplication"),
-    ]);
-
-    console.log("ContractsSummary:", contractsSummary);
-    console.log("ClientsWithSMA:", smaSummary);
-    console.log("ActiveClients:", activeClients);
-    console.log("SystemUsage:", systemUsage);
-    console.log("TopActiveClients:", topClients);
-    console.log("UpcomingExpirations:", expirations);
-    console.log("ExpiredSMA:", ExpiredSMA);
-    console.log("SMADashboard:", SMADashboard);
-    console.log("Industry:", SMADashboard);
-    console.log("SMAApplication:", SMAApplication);
-
-    setContractsSummary(contractsSummary?.dashboard1 || []);
-    setSmaSummary(smaSummary?.dashboard1 || []);
-    setActiveClients(activeClients?.dashboard1 || []);
-    setSystemUsage(systemUsage?.dashboard1 || []);
-    setTopClients(topClients?.dashboard1 || []);
-    setExpiredSMA(ExpiredSMA?.dashboard1 || []);
-    setUpcomingExpirations(expirations?.dashboard1 || []);
-    setSMADashboard(SMADashboard?.dashboard1 || []);
-    setIndustry(Industry?.dashboard1 || []);
-    setSMAApplication(SMAApplication?.dashboard1 || []);
-  };
-
-  loadDashboard();
-}, [user]);
-
+  if (error) {
+    return (
+      <div className="flex h-screen">
+        <main className="flex-1 p-6 bg-gray-50">
+          <ErrorMessage message={error} />
+          <button 
+            onClick={refetch}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </main>
+      </div>
+    );
+  }
 
   return (
-    
-<div className="flex h-screen font-poppins">
-
-      <main className="flex-1 p-4 bg-white">
-        <div className="relative flex-1 p-2">
-          {/* Top Right Icons */}
-          <div className="absolute top-0 right-0 flex items-center space-x-4">
-            <FontAwesomeIcon icon={faBell} className="w-5 h-5 text-gray-500 cursor-pointer" />
-            <div className="relative">
-              <img
-                src="3135715.png"
-                alt="Profile"
-                className="w-8 h-8 rounded-full cursor-pointer"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              />
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
-                  <ul className="py-2 text-gray-700">
-                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center">
-                      <FontAwesomeIcon icon={faUser} className="mr-2" /> Profile
-                    </li>
-                    <li
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
-                      onClick={handleLogout}
-                    >
-                      <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" /> Logout
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Welcome Message */}
-          <h2 className="text-3xl font-bold mt-10 mb-4">Welcome, {user ? user.username : "Guest"}!</h2>
+    <div className="flex h-screen font-poppins bg-gray-50">
+      <main className="flex-1 p-4 pt-20 overflow-auto">
+        {/* Header */}
+        <div className="mb-2">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            Welcome, {user?.username || "Guest"}!
+          </h1>
+          <p className="text-gray-600">Dashboard Overview</p>
         </div>
 
-        {/* My Clients Section */}
-        {/* <div className="bg-white p-6 w-[450px] rounded-lg shadow-md relative">
-          <h3 className="text-lg font-bold mb-4">My Clients</h3>
-          {clients.length === 0 ? (
-            <p className="text-gray-500">Loading clients...</p>
-          ) : (
-            <>
-              <ul className="space-y-2 text-md text-sm">
-                {clients.map((client, index) => (
-                  <li key={index} className="text-gray-900">{client.client_name}</li>
-                ))}
-              </ul>
-              <hr className="mt-3 mb-2"/>
-              <button
-                // onClick={() => setIsModalOpen(true)}
-                onClick={() => navigate('/clients')}
-                className="absolute bottom-2 right-4 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
-              >
-                View All <span className="ml-1">→</span>
-              </button>
-            </>
-          )}
-        </div> */}
+        {/* Main Charts Grid */}
+        <div className="space-y-8">
+          {/* Top Branch Charts */}
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Branch Performance</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div>
+                <ChartTypeSelector
+                  currentType={chartTypes.issuing}
+                  onTypeChange={(type) => handleChartTypeChange('issuing', type)}
+                  types={[CHART_TYPES.BAR, CHART_TYPES.PIE]}
+                />
+                {renderChart(
+                  chartTypes.issuing,
+                  data.TopIssuingBranch,
+                  "Top Issuing Branches",
+                  "client_count",
+                  "system_code"
+                )}
+              </div>
+              
+              <div>
+                <ChartTypeSelector
+                  currentType={chartTypes.redeeming}
+                  onTypeChange={(type) => handleChartTypeChange('redeeming', type)}
+                  types={[CHART_TYPES.BAR, CHART_TYPES.PIE]}
+                />
+                {renderChart(
+                  chartTypes.redeeming,
+                  data.TopRedeemingBranch,
+                  "Top Redeeming Branches",
+                  "client_count",
+                  "system_code"
+                )}
+              </div>
+            </div>
+          </section>
 
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+          {/* Services Chart */}
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Services Overview</h2>
+            <div className="mb-4">
+              <ChartTypeSelector
+                currentType={chartTypes.services}
+                onTypeChange={(type) => handleChartTypeChange('services', type)}
+                types={[CHART_TYPES.BAR, CHART_TYPES.PIE]}
+              />
+            </div>
+            <div className="grid grid-cols-1">
+              {renderChart(
+                chartTypes.services,
+                data.SMAApplication,
+                "Top Services",
+                "client_count",
+                "system_code"
+              )}
+            </div>
+          </section>
 
-  <SystemsBarChart data={systemUsage || []} />
-  {/* <SystemsPieChart data={systemUsage || []} /> */}
-  {/* <SystemsAreaChart data={systemUsage || []} /> */}
-  {/* <SystemsComposedChart data={systemUsage || []} /> */}
-  {/* <SystemsRadarChart  data={systemUsage || []} /> */}
-  {/* <SystemsScatterChart  data={systemUsage || []} /> */}
-  {/* <SystemsLineChart  data={systemUsage || []} /> */}
+          {/* Statistics and Tables */}
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Statistics & Details</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Stat Cards */}
+              <div className="flex flex-col space-y-4">
+                <StatCard 
+                  title="Active Vouchers" 
+                  value={Number(data.VoucherStat?.[0]?.active) || 0}
+                  color="green"
+                />
+                <StatCard 
+                  title="Redeemed Vouchers" 
+                  value={Number(data.VoucherStat?.[0]?.redeemed) || 0} 
+                  color="blue" 
+                />
+                <StatCard 
+                  title="Cancelled Vouchers" 
+                  value={Number(data.VoucherStat?.[0]?.cancelled) || 0} 
+                  color="red" 
+                />
+              </div>
 
-  {/* <SMABarChart data={SMADashboard || []} /> */}
-  <SMAPieChart data={SMADashboard || []} />
-  {/* <SMAAreaChart data={SMADashboard || []} /> */}
-  {/* <SMALineChart data={SMADashboard || []} /> */}
-  {/* <SMAComposedChart data={SMADashboard || []} /> */}
-  {/* <SMARadarChart data={SMADashboard || []} /> */}
-  {/* <SMAScatterChart data={SMADashboard || []} /> */}
-
-
-
-  {/* <IndustryBarChart data={Industry || []} /> */}
-  <IndustryPieChart data={Industry || []} />
-  {/* <IndustryAreaChart data={Industry || []} /> */}
-  {/* <IndustryLineChart data={Industry || []} /> */}
-  {/* <IndustryComposedChart data={Industry || []} /> */}
-  {/* <IndustryRadarChart data={Industry || []} /> */}
-  {/* <IndustryScatterChart data={Industry || []} /> */}
-
-  <SMAApplicationBarChart data={SMAApplication || []} />
-</div>
-
-{/* Dashboard Summary Section */}
-<div className="mt-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
-  <StatCard 
-    title="Active Clients" 
-    value={Number(activeClients?.[0]?.total_active_clients) || 0}  
-  />
-  <StatCard 
-    title="Clients with SMA" 
-    value={Number(smaSummary?.[0]?.with_sma) || 0} 
-    color="blue" 
-  />
-  <StatCard 
-    title="Expiring SMA" 
-    value={Number(smaSummary?.[0]?.expiring_soon) || 0} 
-    color="yellow" 
-  />
-</div>
-
-
-
-<div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 shadow-xl pb-2">
-  {/* <DashboardClientList title="Top Active Clients" data={topClients || []} /> */}
-  <MiniTable title="Expired SMA of Active Clients (as of Today)" data={ExpiredSMA || []} />
-  <MiniTable title="Upcoming SMA Expirations of Active Clients (within 60 Days)" data={upcomingExpirations || []} />
-  {/* <SystemsBarChart data={systemUsage || []} /> */}
-
-</div>
-
-
-
-
+              {/* Tables */}
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                <TableIssuingBranch 
+                  title="Top 10 Issuing Branches" 
+                  data={data.TopIssuingBranchList || []} 
+                />
+                <TableRedeemingBranch 
+                  title="Top 10 Redeeming Branches" 
+                  data={data.TopRedeemingBranchList || []} 
+                />
+              </div>
+            </div>
+          </section>
+        </div>
 
         {/* Client Lookup Modal */}
         <ClientLookupModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          clients={allClients}
+          clients={data.TopActiveClients || []}
         />
       </main>
     </div>

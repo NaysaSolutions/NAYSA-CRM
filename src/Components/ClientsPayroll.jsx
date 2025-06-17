@@ -145,7 +145,7 @@ const currentItems = Array.isArray(filteredClients)
 
   return (
 
-  <div className="p-2 bg-white mt-8">
+  <div className="p-2 bg-white mt-12">
   {/* Header */}
   <div className="absolute top-3 right-6 flex items-center gap-4">
     <FontAwesomeIcon icon={faBell} className="w-5 h-5 text-gray-600 hover:text-blue-700 cursor-pointer transition-colors" />
