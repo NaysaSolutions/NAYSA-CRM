@@ -22,7 +22,10 @@ import {
 } from "recharts";
 
 // Constants
-const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
+// const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
+// const COLORS = ["#000000", "#222222", "#444444", "#666666", "#888888", "#AAAAAA", "#FFFFFF"];
+const COLORS = ["#000000", "#555555", "#AAAAAA", "#FFFFFF"];
+
 const CHART_HEIGHT = 320;
 const CHART_TYPES = {
   BAR: 'bar',
