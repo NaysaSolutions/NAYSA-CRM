@@ -7,74 +7,52 @@ import {
   faQuestionCircle,
   faBars,
   faAdd,
-  faListUl
+  faListUl,
 } from "@fortawesome/free-solid-svg-icons";
-
-// console.log("typeof setIsMobileOpen:", typeof setIsMobileOpen);
 
 const Sidebar = ({
   isOpen,
   setIsOpen,
-  // isMobileOpen,
-  // setIsMobileOpen = () => console.warn("setIsMobileOpen not passed"),
   onAddClient,
   closeAddClientForm,
   showAddClientForm,
-  currentSection
+  currentSection,
 }) => {
   const location = useLocation();
 
   useEffect(() => {
-    if (showAddClientForm) {
+    // close add form only when leaving add client page
+    if (location.pathname !== "/addclients" && showAddClientForm) {
       closeAddClientForm();
     }
-  }, [location.pathname]);
+  }, [location.pathname, showAddClientForm, closeAddClientForm]);
 
   return (
     <>
-      {/* Desktop Toggle Button */}
+      {/* Toggle Button */}
       <button
-        // className="p-2 fixed top-4 left-4 bg-blue-700 text-white rounded-lg z-50 ml-2 hidden sm:block"
         className="p-2 fixed top-4 left-4 bg-blue-700 text-white rounded-lg z-50 ml-2"
-        // className="p-2 fixed top-4 left-4 bg-blue-700 text-white rounded-lg z-50 ml-2 hidden sm:block"
-        // className={`p-2 fixed top-4 left-4 bg-blue-700 text-white rounded-lg z-50 ml-2
-        //   ${isOpen ? "sm:hidden lg:block" : "sm:hidden lg:block"}
-        // `}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
       >
         <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
       </button>
-
-      {/* Mobile Toggle Button */}
-      {/* <button
-        className="p-2 fixed top-4 left-4 bg-green-700 text-white rounded-lg z-50 ml-2 hidden"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
-      </button>  */}
-
-      {/* Optional Backdrop for Mobile */}
-       {/* {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 sm:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )} */}
 
       {/* Sidebar */}
       <aside
         className={`
           fixed top-0 left-0 h-screen bg-white shadow-lg font-poppins z-40
           flex flex-col justify-between overflow-hidden
-          transition-all duration-300 ease-in-out transform
-
-          ${isOpen ? "w-64 sm:w-64" : "w-20 sm:w-20 ml-0"}
+          transition-all duration-300 ease-in-out
+          ${isOpen ? "w-64" : "w-20"}
         `}
       >
-
         <div>
           {/* Logo */}
-          <div className={`transition-all duration-300 ${isOpen ? "px-5 ml-12 mt-3 mb-6" : "ml-0 mb-6 mt-20"}`}>
+          <div
+            className={`transition-all duration-300 ${
+              isOpen ? "px-5 ml-12 mt-3 mb-6" : "ml-0 mb-6 mt-20"
+            }`}
+          >
             <img
               src={isOpen ? "/NSI_LOGO_2.avif" : "/naysa_logo.png"}
               alt="Logo"
@@ -84,71 +62,57 @@ const Sidebar = ({
 
           {/* Navigation */}
           <nav>
-            <ul className="space-y-6 ml-5 mr-4">
+            <ul className="space-y-3 ml-4 mr-4">
               <SidebarLink
                 to="/dashboard"
                 icon={faTh}
                 label="Dashboard"
-                isActive={location.pathname === "/dashboard" && currentSection !== "add-client"}
+                isActive={location.pathname === "/dashboard"}
                 isOpen={isOpen}
-                onClick={() => {
-                  closeAddClientForm();
-                  // setIsMobileOpen(false); // Close mobile on nav
-                }}
+                onClick={closeAddClientForm}
               />
-              {/* <SidebarLink
+
+              <SidebarLink
                 to="/clients"
                 icon={faUsers}
                 label="Clients (All)"
-                isActive={location.pathname === "/clients" && currentSection !== "add-client"}
+                isActive={location.pathname === "/clients"}
                 isOpen={isOpen}
-                onClick={() => {
-                  closeAddClientForm();
-                  // setIsMobileOpen(false); // Close mobile on nav
-                }}
-              /> */}
-                <SidebarLink
-                to="/Vouchers"
-                icon={faListUl}
-                label="Vouchers List"
-                isActive={location.pathname === "/Vouchers" && currentSection !== "add-client"}
-                isOpen={isOpen}
-                onClick={() => {
-                  closeAddClientForm();
-                  // setIsMobileOpen(false); // Close mobile on nav
-                }}
+                onClick={closeAddClientForm}
               />
-               {/* <SidebarLink
+
+              <SidebarLink
+                to="/clientsfinancials"
+                icon={faListUl}
+                label="Clients (Financials)"
+                isActive={location.pathname === "/clientsfinancials"}
+                isOpen={isOpen}
+                onClick={closeAddClientForm}
+              />
+
+              <SidebarLink
                 to="/clientspayroll"
                 icon={faListUl}
                 label="Clients (HR-Pay)"
-                isActive={location.pathname === "/clientspayroll" && currentSection !== "add-client"}
+                isActive={location.pathname === "/clientspayroll"}
                 isOpen={isOpen}
-                onClick={() => {
-                  closeAddClientForm();
-                  // setIsMobileOpen(false); // Close mobile on nav
-                }}
-              /> */}
-
-
+                onClick={closeAddClientForm}
+              />
 
               <SidebarLink
-                to="/Addclients"
+                to="/addclients"
                 icon={faAdd}
-                label="Add New Record"
-                isActive={location.pathname === "/Addclients" && currentSection !== "add-client"}
+                label="Add New Client"
+                isActive={location.pathname === "/addclients"}
                 isOpen={isOpen}
-                onClick={() => {
-                  onAddClient();
-                  // setIsMobileOpen(false);
-                }}
+                onClick={onAddClient}
               />
             </ul>
           </nav>
         </div>
 
-        {/* Help Link */}
-        <div className="p-4 text-gray-500 hover:bg-blue-200 rounded-lg flex items-center space-x-3">
+        {/* Help */}
+        <div className="p-4 text-gray-500 hover:bg-blue-200 rounded-lg flex items-center space-x-3 m-4 cursor-pointer">
           <FontAwesomeIcon icon={faQuestionCircle} className="w-5 h-5" />
           {isOpen && <span>Help</span>}
         </div>
@@ -160,8 +124,10 @@ const Sidebar = ({
 const SidebarLink = ({ to, icon, label, isActive, isOpen, onClick }) => {
   const content = (
     <div
-      className={`flex items-center space-x-4 p-2 rounded-lg transition cursor-pointer ${
-        isActive ? "text-blue-700 font-semibold bg-blue-200" : "text-gray-700 hover:bg-blue-100"
+      className={`flex items-center space-x-4 p-3 rounded-lg transition cursor-pointer ${
+        isActive
+          ? "text-blue-700 font-semibold bg-blue-200"
+          : "text-gray-700 hover:bg-blue-100"
       }`}
     >
       <FontAwesomeIcon icon={icon} className="w-5 h-5" />
@@ -169,11 +135,7 @@ const SidebarLink = ({ to, icon, label, isActive, isOpen, onClick }) => {
     </div>
   );
 
-  return (
-    <li onClick={onClick}>
-      {to ? <Link to={to}>{content}</Link> : content}
-    </li>
-  );
+  return <li onClick={onClick}>{to ? <Link to={to}>{content}</Link> : content}</li>;
 };
 
 export default Sidebar;

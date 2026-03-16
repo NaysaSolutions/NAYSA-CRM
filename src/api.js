@@ -1,9 +1,9 @@
 // utils/api.js
 import axios from "axios";
 
-const BASE_URL = process.env.NODE_ENV === 'development'
-  ? "http://127.0.0.1:8000/api"
-  : "http://192.168.56.1:82/api";
+// const BASE_URL = "/api";
+const BASE_URL = "http://127.0.0.1:8000/api";
+
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -31,6 +31,9 @@ export const GetAPI = async (endpoint, params = {}, config = {}) => {
     throw error;
   }
 };
+
+
+
 
 // Export BASE_URL if you still want to use it for fetch calls outside axios
 export { BASE_URL };
