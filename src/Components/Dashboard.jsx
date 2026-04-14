@@ -283,9 +283,9 @@ const handleAreaDrilldown = (area) => {
   return (
     <div className="flex h-screen font-poppins bg-gray-50">
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="mb-4 rounded-2xl bg-blue-100 px-4 py-3 text-white shadow-lg">
+        <div className="mb-4 rounded-2xl bg-blue-700 px-4 py-3 text-white shadow-lg">
           <div className="flex items-center justify-between">
-            <h2 className="text-3xl text-blue-800 font-bold leading-none">
+            <h2 className="text-3xl text-blue-50 font-bold leading-none">
             Welcome, {user?.username || "Guest"}!
             </h2>
         
@@ -491,7 +491,7 @@ const handleAreaDrilldown = (area) => {
 
         <div className="mb-4">
           <SectionCard title="Clients by Industry">
-            <div className="h-[320px]">
+            <div className="h-[500px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={Industry}
@@ -543,7 +543,7 @@ const handleAreaDrilldown = (area) => {
 
         <div className="mb-4">
           <SectionCard title="Clients by Area">
-            <div className="h-[320px]">
+            <div className="h-[500px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={Area}

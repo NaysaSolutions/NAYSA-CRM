@@ -22,7 +22,7 @@ const MiniTable = ({ title, data, viewAllLink = "/clients" }) => {
       </div>
 
       {/* Table Section */}
-      <div className="max-h-[320px] overflow-auto">
+      <div className="max-h-[550px] overflow-auto">
         <table className="w-full min-w-[520px] text-sm">
           <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur">
             <tr className="border-b border-slate-200 text-left">

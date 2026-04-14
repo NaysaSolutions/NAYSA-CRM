@@ -575,9 +575,9 @@ const ClientsInformation = () => {
 
   return (
     <div className="min-h-screen w-full min-w-0 overflow-x-hidden bg-slate-50 p-3 md:p-2">
-      <div className="mb-2 rounded-2xl bg-blue-100 px-4 py-3 text-white shadow-lg">
+      <div className="mb-2 rounded-2xl bg-blue-700 px-4 py-3 text-white shadow-lg">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-blue-800 leading-none">Clients Information</h2>
+          <h2 className="text-2xl font-bold text-blue-10500 leading-none">Clients Information</h2>
 
           <div className="relative">
             <button
@@ -634,7 +634,7 @@ const ClientsInformation = () => {
             <div className="flex flex-wrap gap-2 xl:justify-end">
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
               >
                 <FontAwesomeIcon icon={faRotateRight} />
                 Reset
@@ -785,7 +785,7 @@ const ClientsInformation = () => {
                       key={key}
                       rowSpan={2}
                       onClick={() => requestSort(key)}
-                      style={getPinnedStyle(key, HEADER_ROW_1_TOP, width)}
+                      // style={getPinnedStyle(key, HEADER_ROW_1_TOP, width)}
                       className={`cursor-pointer whitespace-nowrap border border-blue-200 px-2 py-3 align-middle ${getPinnedHeaderClass(
                         key
                       )}`}
@@ -810,7 +810,7 @@ const ClientsInformation = () => {
                 </tr>
 
                 <tr
-                  className="sticky z-[41] select-none bg-blue-100 text-center text-gray-800"
+                  className="sticky z-[40] select-none bg-blue-100 text-center text-gray-800"
                   style={{ top: `${HEADER_ROW_2_TOP}px` }}
                 >
                   {appGroups.flatMap((group) =>
@@ -844,7 +844,7 @@ const ClientsInformation = () => {
                   {basicColumns.map(({ key, width }) => (
                     <th
                       key={key}
-                      style={getPinnedStyle(key, FILTER_ROW_TOP, width)}
+                      // style={getPinnedStyle(key, FILTER_ROW_TOP, width)}
                       className={`border border-slate-200 bg-slate-50 px-2 py-2 ${getPinnedFilterClass(
                         key
                       )}`}
@@ -895,7 +895,7 @@ const ClientsInformation = () => {
                       <td
                         key={key}
                         title={client[key]}
-                        style={getPinnedStyle(key, undefined, width)}
+                        // style={getPinnedStyle(key, undefined, width)}
                         className={`border border-slate-200 px-3 py-2 text-left align-middle ${
                           key === "client_code"
                             ? "font-semibold text-slate-800"
