@@ -37,7 +37,7 @@ const Sidebar = ({
     <>
       {/* Top Toggle Button */}
       <button
-        className="fixed top-3 left-3 md:top-4 md:left-4 bg-blue-700 hover:bg-blue-800 text-white rounded-lg z-50 w-10 h-10 flex items-center justify-center shadow-lg transition"
+        className="fixed top-3 left-3 md:top-4 md:left-4 mb-4 bg-blue-700 hover:bg-blue-800 text-white rounded-lg z-50 w-10 h-10 flex items-center justify-center shadow-lg transition"
         onClick={() => setIsOpen((prev) => !prev)}
       >
         <FontAwesomeIcon icon={isMobile && isOpen ? faXmark : faBars} className="w-5 h-5" />

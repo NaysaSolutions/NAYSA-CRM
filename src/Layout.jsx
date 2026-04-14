@@ -48,7 +48,7 @@ const Layout = ({ children }) => {
       <main
         className={`
           min-h-screen transition-all duration-300
-          pt-16 md:pt-4
+          pt-16 md:pt-2
           px-3 sm:px-4 md:px-5 lg:px-6
           ${!isMobile ? (isSidebarOpen ? 'md:ml-60' : 'md:ml-16') : 'ml-0'}
         `}

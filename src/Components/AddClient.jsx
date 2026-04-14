@@ -87,11 +87,15 @@ const emptyContract = {
   numberOfEmployees: "",
   training_days: "",
   training_days_consumed: "",
+  training_days_type: "",
   post_training_days: "",
   post_training_days_consumed: "",
+  post_training_days_type: "",
   fs_generation_contract: "",
   fs_generation_consumed: "",
+  fs_generation_type: "",
   sma_days: "",
+  sma_days_type: "",
   sma_consumed: "",
   casStatus: "",
   ac_no: "",
@@ -353,10 +357,13 @@ const AddClientForm = () => {
     const contractFields = [
       'training_days',
       'training_days_consumed',
+      'training_days_type',
       'post_training_days',
       'post_training_days_consumed',
+      'post_training_days_type',
       'fs_generation_contract',
       'fs_generation_consumed',
+      'fs_generation_type',
       'numberOfUsers',
       'numberOfEmployees',
       'contract_date',
@@ -368,7 +375,7 @@ const AddClientForm = () => {
       'effectivity_date',
       'sma_days',
       'sma_consumed',
-      'group_name',
+      'sma_days_type',
       'environment',
       'deployment_type'
     ];
@@ -567,10 +574,13 @@ const AddClientForm = () => {
           app_type: appType,
           training_days: Number(c.training_days) || 0,
           training_days_consumed: Number(c.training_days_consumed) || 0,
+          training_days_type: c.training_days_type || '',
           post_training_days: Number(c.post_training_days) || 0,
           post_training_days_consumed: Number(c.post_training_days_consumed) || 0,
+          post_training_days_type: c.post_training_days_type || '',
           fs_generation_contract: Number(c.fs_generation_contract) || 0,
           fs_generation_consumed: Number(c.fs_generation_consumed) || 0,
+          fs_generation_type: c.fs_generation_type || '',
           numberOfUsers: Number(c.numberOfUsers) || 0,
           numberOfEmployees: Number(c.numberOfEmployees) || 0,
           contract_date: formatDate(c.contract_date),
@@ -585,6 +595,7 @@ const AddClientForm = () => {
           active: currentToggles.active ? "Y" : "N",
           sma_days: Number(c.sma_days) || 0,
           sma_consumed: Number(c.sma_consumed) || 0,
+          sma_days_type: c.sma_days_type || '',
           casStatus: c.casStatus || '',
           ac_no: c.ac_no || '',
           date_issued: formatDate(c.date_issued),
@@ -662,8 +673,8 @@ const AddClientForm = () => {
   
   // Renders the App Specific details based on the selected TOP TAB
   const renderAppTabContent = () => (
-    <div className="p-4 space-y-6 animate-fade-in">
-      <div className="flex flex-col lg:flex-row gap-6">
+    <div className="p-4 space-y-3 animate-fade-in">
+      <div className="flex flex-col lg:flex-row gap-3">
         {/* Contract Section */}
         <div className="flex-2 bg-white rounded-xl shadow p-4 border">
           <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
@@ -697,7 +708,7 @@ const AddClientForm = () => {
         {/* Toggles */}
         <div className="w-full lg:w-2/5 bg-white rounded-xl shadow p-4 border">
           <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-3">
             {toggleFields.filter(({ key }) => (toggleVisibilityMap[activeTopTab] || []).includes(key)).map(({ label, key }) => (
               <div key={key} className="flex flex-col items-center">
                 <span className="text-xs font-medium text-gray-600 mb-1">{label}</span>
@@ -731,7 +742,7 @@ const AddClientForm = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-blue-700 mb-1">Ack. Cert No.</label>
+              <label className="block text-xs font-bold text-blue-700 mb-1">Acknowledgement Certificate No.</label>
               <input type="text" name="ac_no" value={currentContract.ac_no || ''} onChange={handleChange} className="w-full h-9 px-2 border border-gray-300 rounded text-sm" />
             </div>
             <div>
@@ -755,22 +766,37 @@ const AddClientForm = () => {
         <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {[
-            { label: 'Training Days', base: 'training_days', consumed: 'training_days_consumed' },
-            { label: 'Post Training Days', base: 'post_training_days', consumed: 'post_training_days_consumed' },
-            ...(activeTopTab === "FINANCIALS" ? [{ label: 'FS Generation', base: 'fs_generation_contract', consumed: 'fs_generation_consumed' }] : []),
-            { label: 'SMA Days', base: 'sma_days', consumed: 'sma_consumed' }
+            { label: 'Training Days', base: 'training_days', consumed: 'training_days_consumed', type: 'training_days_type' },
+            { label: 'Post Training Days', base: 'post_training_days', consumed: 'post_training_days_consumed', type: 'post_training_days_type' },
+            ...(activeTopTab === "FINANCIALS"
+              ? [{ label: 'FS Generation', base: 'fs_generation_contract', consumed: 'fs_generation_consumed', type: 'fs_generation_type' }]
+              : []),
+            { label: 'SMA Days', base: 'sma_days', consumed: 'sma_consumed', type: 'sma_days_type' }
           ].map(field => (
-            <div key={field.base} className="grid grid-cols-3 gap-2 items-center">
+            <div key={field.base} className="grid grid-cols-2 lg:grid-cols-4 gap-2 items-center">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">{field.label}</label>
+                <label className="block text-[11px] sm:text-xs font-medium text-gray-700 mb-1">Type</label>
+                <select
+                  name={field.type}
+                  value={currentContract[field.type] || ''}
+                  onChange={handleChange}
+                  className="w-full h-9 px-2 border border-gray-300 rounded text-sm"
+                >
+                  <option value="">Select Type</option>
+                  <option value="Onsite">Onsite</option>
+                  <option value="Online">Online</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] sm:text-xs font-medium text-gray-700 mb-1">{field.label}</label>
                 <input type="number" name={field.base} value={currentContract[field.base] || ''} onChange={handleChange} className="w-full h-9 px-2 border border-gray-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">{field.label} (Consumed)</label>
+                <label className="block text-[11px] sm:text-xs font-medium text-blue-700 mb-1">(Consumed)</label>
                 <input type="number" name={field.consumed} value={currentContract[field.consumed] || ''} onChange={handleChange} className="w-full h-9 px-2 border border-blue-300 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">{field.label} (Balance)</label>
+                <label className="block text-[11px] sm:text-xs font-medium text-blue-700 mb-1">(Balance)</label>
                 <input type="number" readOnly value={(currentContract[field.base] || 0) - (currentContract[field.consumed] || 0)} className="w-full h-9 px-2 border border-blue-300 bg-gray-100 rounded text-sm outline-none text-gray-600 font-semibold" />
               </div>
             </div>
@@ -789,24 +815,24 @@ const AddClientForm = () => {
         </button>
       </div>
       <div className="overflow-x-auto rounded-lg shadow-sm border border-slate-200">
-        <table className="min-w-full bg-white text-sm">
+        <table className="min-w-full bg-white text-xs">
           <thead className="bg-blue-500 text-white">
             <tr>
-              <th className="p-3 text-left">File Name</th>
-              <th className="p-3 text-left">Upload Date</th>
-              <th className="p-3 text-center">Actions</th>
+              <th className="p-2 text-left">File Name</th>
+              <th className="p-2 text-left">Upload Date</th>
+              <th className="p-2 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {files.length > 0 ? files.map(file => (
               <tr key={file.id || file.file_id || Math.random()} className="border-b hover:bg-slate-50 transition">
-                <td className="p-3">{file.original_name}</td>
-                <td className="p-3">{file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}</td>
-                <td className="p-3">
+                <td className="py-1 px-2">{file.original_name}</td>
+                <td className="py-1 px-2">{file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}</td>
+                <td className="py-1 px-2">
                   <div className="flex justify-center gap-3">
-                    <button onClick={() => handleViewFile(file)} className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-full transition" title="View"><FaEye /></button>
-                    <button onClick={() => handleDownloadFile(file)} className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-full transition" title="Download"><FaDownload /></button>
-                    <button onClick={() => handleDeleteFile(file)} className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full transition" title="Delete"><FaTrash /></button>
+                    <button onClick={() => handleViewFile(file)} className="text-sm p-1 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-md transition" title="View"><FaEye /></button>
+                    <button onClick={() => handleDownloadFile(file)} className="text-sm p-1 bg-green-100 text-green-600 hover:bg-green-200 rounded-md transition" title="Download"><FaDownload /></button>
+                    <button onClick={() => handleDeleteFile(file)} className="text-sm p-1 bg-red-100 text-red-600 hover:bg-red-200 rounded-md transition" title="Delete"><FaTrash /></button>
                   </div>
                 </td>
               </tr>
@@ -820,7 +846,7 @@ const AddClientForm = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 md:p-2 bg-slate-50 min-h-screen">
       
       {/* Loading Overlay */}
       {isLoading && (
@@ -1047,7 +1073,7 @@ const AddClientForm = () => {
       )}
 
       {/* Header Actions */}
-      <div className="flex justify-between items-center mb-6">
+      {/* <div className="flex justify-between items-center mb-6">
         <button onClick={() => navigate("/dashboard")} className="flex items-center text-gray-600 hover:text-blue-600 transition-colors font-medium">
           <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4 mr-2" /> Back to Dashboard
         </button>
@@ -1070,10 +1096,10 @@ const AddClientForm = () => {
             )}
           </div>
         </div>
-      </div>
+      </div> */}
 
-      <div className="bg-blue-600 shadow-lg p-4 mb-6 rounded-lg text-white sticky top-0 z-30 flex justify-between items-center">
-        <h1 className="text-xl font-bold tracking-wide">{isViewMode ? `Client Directory: ${client.client_name}` : "Client Registration"}</h1>
+      <div className="bg-blue-600 shadow-lg p-3 mb-4 rounded-lg text-white sticky top-0 z-30 flex justify-between items-center">
+        <h1 className="text-lg font-bold tracking-wide">{isViewMode ? `Client Information: ${client.client_name}` : "Client Registration"}</h1>
       </div>
 
       <div className="bg-white shadow-xl p-6 rounded-xl border border-gray-100">
@@ -1240,7 +1266,7 @@ const AddClientForm = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTopTab(tab)}
-                className={`flex-1 min-w-[120px] px-4 py-3 font-bold text-sm tracking-wide transition-colors ${activeTopTab === tab ? "bg-white text-blue-600 shadow-[inset_0_4px_6px_rgba(0,0,0,0.1)]" : "hover:bg-blue-700"}`}
+                className={`flex-1 sm:min-w-[120px] sm:px-4 py-3 font-bold text-[11px] sm:text-sm tracking-wide transition-colors ${activeTopTab === tab ? "bg-white text-blue-600 shadow-[inset_0_4px_6px_rgba(0,0,0,0.1)]" : "hover:bg-blue-700"}`}
               >
                 {tab}
               </button>
@@ -1251,11 +1277,11 @@ const AddClientForm = () => {
           {renderAppTabContent()}
           
           {/* Modules and Technicians Assignment Block */}
-          <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-slate-50 border-t border-slate-200 rounded-b-xl">
+          <div className="p-3 grid grid-cols-1 lg:grid-cols-3 gap-3 bg-slate-50 border-t border-slate-200 rounded-b-xl">
             {/* Core Modules */}
             <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
               <h3 className="font-semibold text-blue-800 mb-3 text-sm uppercase tracking-wide">Core Modules</h3>
-              <div className="space-y-2">
+              <div className="space-y-0">
                 {currentMainModules.map((module) => (
                   <label key={module} className="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition">
                     <input type="checkbox" checked={currentSelectedModules.includes(module)} onChange={() => handleModuleToggle(module)} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
@@ -1268,7 +1294,7 @@ const AddClientForm = () => {
             {/* Other Modules */}
             <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
               <h3 className="font-semibold text-blue-800 mb-3 text-sm uppercase tracking-wide">Other Modules</h3>
-              <div className="space-y-2">
+              <div className="space-y-0">
                 {currentOtherModules.map((module) => (
                   <label key={module} className="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition">
                     <input type="checkbox" checked={currentSelectedModules.includes(module)} onChange={() => handleModuleToggle(module)} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
@@ -1456,7 +1482,7 @@ const AddClientForm = () => {
           <button 
             onClick={handleSave}
             disabled={isSaving} 
-            className="bg-blue-600 text-white font-bold tracking-wide px-24 py-4 rounded-xl shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0 flex items-center text-lg"
+            className="bg-blue-600 text-white font-bold tracking-wide px-24 py-2 rounded-xl shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0 flex items-center text-lg"
           >
             {isSaving && <svg className="animate-spin mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>}
             {isSaving ? (isViewMode ? "UPDATING..." : "SAVING...") : (isViewMode ? "UPDATE CLIENT" : "SAVE CLIENT")}
