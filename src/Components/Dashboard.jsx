@@ -65,7 +65,7 @@ const ChartTypeSelector = ({ value, onChange }) => (
   <select
     value={value}
     onChange={(e) => onChange(e.target.value)}
-    className="text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2 py-1 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 cursor-pointer"
+    className="text-[11px] font-medium text-gray-500 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 cursor-pointer transition-all duration-150 hover:border-blue-300 hover:text-blue-600 shadow-sm"
   >
     <option value="bar">Bar Chart</option>
     <option value="line">Line Chart</option>
@@ -74,9 +74,9 @@ const ChartTypeSelector = ({ value, onChange }) => (
 );
 
 const SectionCard = ({ title, action, children, className = "" }) => (
-  <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col ${className}`}>
-    <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between gap-2">
-      <h4 className="text-sm md:text-base font-semibold text-gray-800">{title}</h4>
+  <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`}>
+    <div className="px-5 pt-4 pb-3 border-b border-gray-50 flex items-center justify-between gap-2">
+      <h4 className="text-sm md:text-[15px] font-semibold text-gray-700 tracking-tight">{title}</h4>
       {action && <div>{action}</div>}
     </div>
     <div className="p-4 flex-1">{children}</div>
@@ -84,7 +84,10 @@ const SectionCard = ({ title, action, children, className = "" }) => (
 );
 
 const SkeletonBox = ({ className = "" }) => (
-  <div className={`animate-pulse rounded-xl bg-gray-200 ${className}`} />
+  <div className={`relative overflow-hidden rounded-xl bg-gray-100 ${className}`}>
+    <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+    <style>{`@keyframes shimmer { 100% { transform: translateX(100%); } }`}</style>
+  </div>
 );
 
 // --- Generic Chart Renderer ---
@@ -311,7 +314,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen font-poppins bg-gray-50">
+      <div className="flex h-screen font-poppins bg-[#f8f9fb]">
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="mb-6 flex items-center justify-between gap-3">
             <div>
@@ -339,22 +342,31 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="flex h-screen font-poppins bg-gray-50">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="mb-4 rounded-2xl bg-blue-700 px-4 py-3 text-white shadow-lg">
+    <div className="flex h-screen font-poppins bg-[#f8f9fb]">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 animate-[pageIn_0.3s_ease-out]">
+        <style>{`@keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+        <div className="mb-4 rounded-2xl bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 px-5 py-4 text-white shadow-md shadow-blue-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-3xl text-blue-50 font-bold leading-none">
-              Welcome, {user?.username || "NAYSA Admin"}!
-            </h2>
+            <div>
+              <p className="text-blue-200 text-xs font-medium tracking-widest uppercase mb-0.5">Dashboard</p>
+              <h2 className="text-2xl text-white font-bold leading-tight tracking-tight">
+                Welcome, {user?.username || "NAYSA Admin"}!
+              </h2>
+            </div>
             <div className="relative">
-              <button onClick={() => setIsDropdownOpen((prev) => !prev)} className="flex items-center justify-center" type="button">
-                <img src="3135715.png" alt="Profile" className="w-9 h-9 rounded-full border-2 border-white/60 shadow-sm" />
+              <button
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                className="flex items-center justify-center ring-2 ring-white/30 hover:ring-white/60 rounded-full transition-all duration-200"
+                type="button"
+              >
+                <img src="3135715.png" alt="Profile" className="w-9 h-9 rounded-full border-2 border-white/50 shadow-sm" />
               </button>
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg z-50">
+                <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl z-50 animate-[fadeIn_0.15s_ease-out]">
+                  <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
                   <ul className="py-2 text-gray-700 text-sm">
-                    <li className="px-4 py-2 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"><FontAwesomeIcon icon={faUser} /> Profile</li>
-                    <li className="px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 cursor-pointer" onClick={handleLogout}><FontAwesomeIcon icon={faSignOutAlt} /> Logout</li>
+                    <li className="px-4 py-2 hover:bg-gray-50 flex items-center gap-2 cursor-pointer transition-colors duration-100"><FontAwesomeIcon icon={faUser} className="text-gray-400" /> Profile</li>
+                    <li className="px-4 py-2 hover:bg-red-50 text-red-500 flex items-center gap-2 cursor-pointer transition-colors duration-100" onClick={handleLogout}><FontAwesomeIcon icon={faSignOutAlt} /> Logout</li>
                   </ul>
                 </div>
               )}
@@ -362,7 +374,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {error && <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">{error}</div>}
+        {error && <div className="mb-4 rounded-xl border border-red-100 bg-red-50/80 px-4 py-3 text-red-600 text-sm flex items-center gap-2 backdrop-blur-sm">{error}</div>}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <StatCard title="Active Clients" value={stats.activeClients} icon="users" color="blue" />
